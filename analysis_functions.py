@@ -7,7 +7,6 @@ import pandas as pd
 
 
 filters = ['g', 'r', 'i']
-# filter_zeropoints = [21.65063765247328, 21.025287319733366, 20.03855919309204] # instrumental zeropoint (mag), for g, r, i
 color_index_types = ['g-r', 'r-i', 'g-i']
 
 
@@ -87,4 +86,13 @@ def calculate_all(file_root, star_name, x_position, y_position, radius):
     temp_std = np.std(temperatures)
 
     return star_fluxes, apparent_mags, temperatures, average_temp, temp_std
+
+
+def relative_to_absolute_magnitude(apparent_mag, distance_pc):
+    """
+    Convert apparent magnitude to absolute magnitude.
+    """
+    if distance_pc <= 0:
+        raise ValueError("Distance must be positive.")
+    return apparent_mag - 5 * np.log10(distance_pc) + 5
 
