@@ -94,5 +94,21 @@ def relative_to_absolute_magnitude(apparent_mag, distance_pc):
     """
     if distance_pc <= 0:
         raise ValueError("Distance must be positive.")
+    # absolute_mag = apparent_mag - 5*np.log10(distance_pc/10) # same thing
     return apparent_mag - 5 * np.log10(distance_pc) + 5
 
+
+def calculate_luminosity(absolute_mag, solar_luminosity=3.828e26, solar_absolute_mag=4.83):
+    """
+    Calculate the luminosity of a star given its absolute magnitude.
+    
+    Parameters:
+        absolute_mag (float): The absolute magnitude of the star.
+        solar_luminosity (float): Luminosity of the Sun in watts (default: 3.828e26 W).
+        solar_absolute_mag (float): Absolute magnitude of the Sun (default: 4.83).
+    
+    Returns:
+        float: Luminosity of the star in watts.
+    """
+    luminosity_ratio = 10**(0.4 * (solar_absolute_mag - absolute_mag))
+    return solar_luminosity * luminosity_ratio
