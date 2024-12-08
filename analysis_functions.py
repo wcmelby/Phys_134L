@@ -13,8 +13,12 @@ color_index_types = ['g-r', 'r-i', 'g-i']
 def calculate_flux(file_root, star_name, x_position, y_position, radius):
     """Calculate flux within an aperture of (radius) pixels, then subtract the median background counts. 
     star_name is a string that is the start of the file name (excluding the filter, like 'van_Maanen_')"""
+
+    gain = 0.7 # e-/ADU
+    pixel_sums = []
     fluxes = []
     filter_zeropoints = []
+
     for filter in filters:
         file = os.path.join(file_root, star_name + f"{filter}" + '.fits')
 
@@ -22,6 +26,7 @@ def calculate_flux(file_root, star_name, x_position, y_position, radius):
         data = hdul[1].data
         header = hdul[1].header
         zeropoint = header.get('L1ZP', 'Keyword not found')
+        exptime = header.get('EXPTIME', 'Keyword not found')
         filter_zeropoints.append(zeropoint)
 
         y, x = np.indices(data.shape)  # Create coordinate grids for the image
@@ -35,9 +40,11 @@ def calculate_flux(file_root, star_name, x_position, y_position, radius):
 
         aperture_flux = np.sum(data[aperture_mask] - background_median)
 
-        fluxes.append(aperture_flux)
+        pixel_sums.append(aperture_flux)
+        flux = gain*aperture_flux/exptime
+        fluxes.append(flux)
 
-    return fluxes, filter_zeropoints
+    return fluxes, filter_zeropoints, pixel_sums
 
 
 def apparent_mag(flux, zeropoint):
@@ -94,7 +101,7 @@ def relative_to_absolute_magnitude(apparent_mag, distance_pc):
     """
     if distance_pc <= 0:
         raise ValueError("Distance must be positive.")
-    # absolute_mag = apparent_mag - 5*np.log10(distance_pc/10) # same thing
+    # absolute_mag = apparent_mag - 5*np.log10(distance_pc/10) # equivalent
     return apparent_mag - 5 * np.log10(distance_pc) + 5
 
 
