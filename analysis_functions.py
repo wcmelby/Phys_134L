@@ -73,12 +73,45 @@ def calculate_temperature(color_index, color_index_type, data):
     return closest_row['Temperature (K)'].values[0]
 
 
-def calculate_all(file_root, star_name, x_position, y_position, radius):
+def relative_to_absolute_magnitude(apparent_mag, distance_pc):
+    """
+    Convert apparent magnitude to absolute magnitude.
+    """
+    if distance_pc <= 0:
+        raise ValueError("Distance must be positive.")
+    # absolute_mag = apparent_mag - 5*np.log10(distance_pc/10) # equivalent
+    absolute_mag = apparent_mag - 5 * np.log10(distance_pc) + 5
+    return absolute_mag
+
+
+def calculate_luminosity(absolute_mag, solar_luminosity=3.846e26, solar_absolute_mag=4.83):
+    """
+    Calculate the luminosity of a star given its absolute magnitude.
+    
+    Parameters:
+        absolute_mag (float): The absolute magnitude of the star.
+        solar_luminosity (float): Luminosity of the Sun in watts (default: 3.828e26 W).
+        solar_absolute_mag (float): Absolute magnitude of the Sun (default: 4.83).
+    
+    Returns:
+        float: Luminosity of the star in watts.
+    """
+    luminosity = solar_luminosity * 10**(0.4 * (solar_absolute_mag - absolute_mag))
+
+    return luminosity
+
+
+def calculate_all(file_root, star_name, x_position, y_position, radius, distance):
     star_fluxes = calculate_flux(file_root, star_name, x_position, y_position, radius)[0]
     filter_zeropoints = calculate_flux(file_root, star_name, x_position, y_position, radius)[1]
     apparent_mags = np.zeros(3)
+    absolute_mags = np.zeros(3)
+    luminosities = np.zeros(3)
+
     for i in range(3):
         apparent_mags[i] = apparent_mag(star_fluxes[i], filter_zeropoints[i])
+        absolute_mags[i] = relative_to_absolute_magnitude(apparent_mags[i], distance)
+        luminosities[i] = calculate_luminosity(absolute_mags[i])
 
     index_gr = apparent_mags[0] - apparent_mags[1]
     index_ri = apparent_mags[1] - apparent_mags[2]
@@ -92,30 +125,4 @@ def calculate_all(file_root, star_name, x_position, y_position, radius):
     average_temp = np.mean(temperatures)
     temp_std = np.std(temperatures)
 
-    return star_fluxes, apparent_mags, temperatures, average_temp, temp_std
-
-
-def relative_to_absolute_magnitude(apparent_mag, distance_pc):
-    """
-    Convert apparent magnitude to absolute magnitude.
-    """
-    if distance_pc <= 0:
-        raise ValueError("Distance must be positive.")
-    # absolute_mag = apparent_mag - 5*np.log10(distance_pc/10) # equivalent
-    return apparent_mag - 5 * np.log10(distance_pc) + 5
-
-
-def calculate_luminosity(absolute_mag, solar_luminosity=3.828e26, solar_absolute_mag=4.83):
-    """
-    Calculate the luminosity of a star given its absolute magnitude.
-    
-    Parameters:
-        absolute_mag (float): The absolute magnitude of the star.
-        solar_luminosity (float): Luminosity of the Sun in watts (default: 3.828e26 W).
-        solar_absolute_mag (float): Absolute magnitude of the Sun (default: 4.83).
-    
-    Returns:
-        float: Luminosity of the star in watts.
-    """
-    luminosity_ratio = 10**(0.4 * (solar_absolute_mag - absolute_mag))
-    return solar_luminosity * luminosity_ratio
+    return star_fluxes, apparent_mags, absolute_mags, luminosities, temperatures, average_temp, temp_std
