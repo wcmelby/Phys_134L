@@ -125,4 +125,5 @@ def calculate_all(file_root, star_name, x_position, y_position, radius, distance
     average_temp = np.mean(temperatures)
     temp_std = np.std(temperatures)
 
+    print(star_fluxes)
     return star_fluxes, apparent_mags, absolute_mags, luminosities, temperatures, average_temp, temp_std
