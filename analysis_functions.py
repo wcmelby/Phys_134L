@@ -103,6 +103,14 @@ def calculate_luminosity(absolute_mag, solar_luminosity=3.846e26, solar_absolute
     return luminosity
 
 
+def calculate_luminosity_error(absolute_mag, absolute_mag_error):
+    solar_luminosity = 3.846e26
+    solar_abs_mag = 4.83
+    luminosity_error = abs(absolute_mag_error * (solar_luminosity * 10**(0.4*solar_abs_mag) *-0.4 * np.log(10)*10**(-0.4*absolute_mag)))
+
+    return luminosity_error
+
+
 # def calculate_all(file_root, star_name, x_position, y_position, radius, distance):
 #     star_fluxes = calculate_flux(file_root, star_name, x_position, y_position, radius)[0]
 #     filter_zeropoints = calculate_flux(file_root, star_name, x_position, y_position, radius)[1]
@@ -137,11 +145,13 @@ def calculate_all(file_root, star_name, x_position, y_position, radius, distance
     apparent_mags = np.zeros(3)
     absolute_mags = np.zeros(3)
     luminosities = np.zeros(3)
+    luminosity_errors = np.zeros(3)
 
     for i in range(3):
         apparent_mags[i] = apparent_mag(star_fluxes[i], filter_zeropoints[i])
         absolute_mags[i] = relative_to_absolute_magnitude(apparent_mags[i], distance)
         luminosities[i] = calculate_luminosity(absolute_mags[i])
+        luminosity_errors[i] = calculate_luminosity_error(absolute_mags[i], color_index_error)
 
     index_gr = apparent_mags[0] - apparent_mags[1]
     index_ri = apparent_mags[1] - apparent_mags[2]
@@ -154,7 +164,10 @@ def calculate_all(file_root, star_name, x_position, y_position, radius, distance
 
     # average_temp = np.mean(temperatures)
     # temp_std = np.std(temperatures)
-    temp_error = np.mean((temperatures[0]+calculate_temperature(color_index_error, 'g-r', csv_data)), (temperatures[0]-calculate_temperature(color_index_error, 'g-r', csv_data)))
+    # temp_error = np.mean([(temperatures[0]+calculate_temperature(color_index_error, 'g-r', csv_data)), (temperatures[0]-calculate_temperature(color_index_error, 'g-r', csv_data))])
+    temp_error = ((calculate_temperature(color_index_error+index_gr, 'g-r', csv_data)-temperatures[0])+(calculate_temperature(-color_index_error+index_gr, 'g-r', csv_data)-temperatures[0]))/2
+    temp_error = abs(temp_error)
 
     # print(star_fluxes)
-    return star_fluxes, apparent_mags, absolute_mags, luminosities, temperatures[0]
+    return star_fluxes, apparent_mags, absolute_mags, luminosities, temperatures[0], temp_error, luminosity_errors
+
